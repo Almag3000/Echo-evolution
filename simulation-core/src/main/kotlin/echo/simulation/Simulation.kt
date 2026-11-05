@@ -61,6 +61,7 @@ class Simulation(private val seed: Long, private val config: Config = Config()) 
         val available = world.food.toMutableList()
         val survivors = mutableListOf<Agent>()
         var nextId = world.nextId
+        var births = 0
         for (agent in world.agents.sortedBy { it.id }) {
             val gene = agent.genome.normalized()
             val target = available.filter { hypot(it.x - agent.x, it.y - agent.y) <= gene.vision }
@@ -79,8 +80,7 @@ class Simulation(private val seed: Long, private val config: Config = Config()) 
             if (energy <= 0.0) continue
             val updated = agent.copy(x = nx, y = ny, energy = energy, age = agent.age + 1)
             if (energy >= config.reproductionThreshold &&
-                survivors.size + (world.agents.size - survivors.size) < config.maxAgents &&
-                survivors.size + 2 <= config.maxAgents
+                world.agents.size + births < config.maxAgents
             ) {
                 survivors += updated.copy(energy = energy / 2)
                 val childGenome = gene.copy(
@@ -90,6 +90,7 @@ class Simulation(private val seed: Long, private val config: Config = Config()) 
                     curiosity = gene.curiosity + rng.nextDouble(-0.05, 0.05)
                 ).normalized()
                 survivors += Agent(nextId++, nx, ny, energy / 2, genome = childGenome, generation = agent.generation + 1)
+                births++
             } else survivors += updated
         }
         if (available.size < config.maxFood && world.tick % 5 == 0) {
